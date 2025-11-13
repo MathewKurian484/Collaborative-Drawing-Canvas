@@ -1,114 +1,86 @@
-# Collaborative Drawing App
+# Real-Time Collaborative Drawing Canvas
 
-A real-time collaborative drawing application built with Node.js, Socket.IO, and HTML5 Canvas.
+This is a multi-user, real-time drawing application built with Node.js and Vanilla JavaScript. It allows multiple users to connect to the same session, draw on a shared canvas simultaneously, and see each other's actions instantly. The application features a robust room system, various drawing tools, and a global undo/redo history.
 
 ## Features
 
-- ✏️ **Brush Tool** - Draw freehand lines
-- 🧹 **Eraser Tool** - Erase parts of your drawing
-- 📐 **Shape Tools** - Draw rectangles, circles, and triangles
-- 🎨 **Color Picker** - Choose any color
-- 📏 **Adjustable Stroke Width** - Control line thickness
-- 👥 **Real-time Collaboration** - Multiple users can draw simultaneously
-- 🔄 **Undo/Redo** - Revert or restore your actions
-- 🗑️ **Clear Canvas** - Start fresh
-- 🖱️ **Live Cursors** - See where other users are drawing
+-   **Real-Time Collaboration**: Drawings, cursors, and user lists update instantly for all connected clients.
+-   **User Naming**: Users can choose a name for their session.
+-   **Room System**:
+    -   Create and join isolated drawing rooms.
+    -   Support for public and private (password-protected) rooms.
+    -   Generate shareable links for private rooms.
+-   **Drawing Tools**:
+    -   **Brush & Eraser**: Standard free-hand drawing tools.
+    -   **Shapes**: A dropdown menu to draw rectangles, circles, and triangles.
+    -   **Color Picker**: Select any color for your brush and shapes.
+    -   **Stroke Width Slider**: Adjust the thickness of lines and shape outlines.
+-   **Global State Management**:
+    -   A powerful **Undo/Redo** system that works for all users in a room.
+    -   A **Clear Canvas** button that is also a reversible action in the history.
+-   **Session Persistence**:
+    -   Ability to **Save** the current state of a room's canvas to the server.
+    -   Ability to **Load** a previously saved session into the current room.
 
-## Setup Instructions
+## Tech Stack
 
-1. Clone the repository:
-```bash
-git clone https://github.com/YOUR_USERNAME/Flam.git
-cd Flam
-```
+-   **Backend**: Node.js, Express.js, Socket.IO
+-   **Frontend**: Vanilla JavaScript (ES6+), HTML5 Canvas, Socket.IO Client
+-   **Persistence**: Node.js `fs` module (Local File System)
 
-2. Install dependencies and start the server:
-```bash
-npm install && npm start
-```
+## Setup and Installation
 
-3. Open your browser and navigate to:
-```
-http://localhost:3000
-```
+To run this project locally, you will need [Node.js](https://nodejs.org/) and npm installed.
 
-The server will run on port 3000 by default.
+1.  **Clone the repository:**
+    ```bash
+    git clone <your-repository-url>
+    ```
+
+2.  **Navigate to the project directory:**
+    ```bash
+    cd collaborative-canvas
+    ```
+
+3.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+4.  **Create the sessions directory:**
+    The save/load feature requires a directory named `sessions` to exist at the root of the project.
+    ```bash
+    mkdir sessions
+    ```
+
+5.  **Start the server:**
+    The `package.json` should include a start script.
+    ```bash
+    npm start
+    ```
+
+6.  **Access the application:**
+    Open your web browser and navigate to `http://localhost:3000`.
 
 ## How to Test with Multiple Users
 
-To test the collaborative features:
+You can simulate a multi-user environment on a single machine in two ways:
 
-1. **Option 1: Multiple Browser Windows**
-   - Open `http://localhost:3000` in multiple tabs or windows
-   - Each tab represents a different user
+1.  **Multiple Browser Windows**: Open one browser window and navigate to `http://localhost:3000`. Then, open a second window (preferably an Incognito or Private window to ensure a separate session) and navigate to the same address. You can now interact between the two windows as two different users.
 
-2. **Option 2: Multiple Browsers**
-   - Open the app in Chrome, Firefox, Edge, etc.
-   - Each browser will have a different user session
+2.  **Ngrok (Advanced)**: To test with friends on different networks, you can use a tool like [ngrok](https://ngrok.com/) to create a secure public tunnel to your local server.
+    ```bash
+    # After starting your server, run this in a new terminal
+    ngrok http 3000
+    ```
+    Share the public URL provided by ngrok with your friends.
 
-3. **Option 3: Multiple Devices (Same Network)**
-   - Find your local IP address (e.g., `192.168.1.100`)
-   - On other devices connected to the same network, navigate to `http://YOUR_IP:3000`
+## Known Limitations
 
-4. **What to Test:**
-   - Draw in one window and watch it appear in others in real-time
-   - Try different tools (brush, shapes, eraser)
-   - Test undo/redo functionality across users
-   - Watch cursor movements of other users
-   - Test the clear canvas button
-
-## Known Limitations/Bugs
-
-- **Performance**: Canvas may slow down with large drawing histories (thousands of actions)
-- **Undo/Redo**: These actions are global - any user can undo another user's work
-- **No User Authentication**: Users are identified only by randomly generated socket IDs
-- **No Persistence**: Drawing history is lost when the server restarts
-- **Eraser as White Brush**: The eraser draws white, so it won't work on non-white backgrounds
-- **Shape Previews**: Shape tool previews are only visible to the person drawing, not other users
-- **No Fill Tool**: Shapes can only be stroked, not filled
-- **Limited Canvas Size**: Fixed at 800x600 pixels
-- **No Mobile Support**: Touch events not implemented; works best on desktop
+-   The session persistence uses the local file system, which is not suitable for a production environment. A database would be a more robust solution.
+-   The user interface is functional but not fully responsive for mobile devices.
+-   The current implementation redraws the entire canvas from history after major state changes (like undo/redo). For extremely complex drawings with thousands of actions, this could become a performance bottleneck.
 
 ## Time Spent on Project
 
-Approximately **1 day** of development time.
-
-## Project Structure
-
-```
-Collaborative-Drawing-Canvas/
-├── client/
-│   ├── index.html       # Main HTML file
-│   ├── main.js          # Client-side JavaScript
-│   └── style.css        # Styling
-├── server/
-│   └── server.js        # Server-side code
-├── .gitignore
-├── package.json
-└── README.md
-```
-
-## Technologies Used
-
-- **Node.js** - Backend runtime
-- **Express** (v5.1.0) - Web server framework
-- **Socket.IO** (v4.8.1) - Real-time bidirectional communication
-- **HTML5 Canvas** - Drawing surface
-- **Vanilla JavaScript** - Client-side logic
-
-## How It Works
-
-1. **Drawing**: Users draw on an HTML5 canvas element
-2. **Real-time Sync**: Socket.IO broadcasts drawing data to all connected clients
-3. **History Management**: Server maintains a complete history of all drawing actions
-4. **Dual Canvas System**: One canvas for drawings, one overlay canvas for cursors and shape previews
-5. **Undo/Redo**: Actions can be reversed or restored by popping from history arrays
-6. **Live Cursors**: Each user's cursor position is broadcast and rendered with their assigned color
-
-## License
-
-MIT License - feel free to use this project for learning or personal projects!
-
-## Author
-
-Mathew Kurian
+The estimated time to build this project from scratch, including research, implementation, and debugging, is approximately **15-20 hours**.

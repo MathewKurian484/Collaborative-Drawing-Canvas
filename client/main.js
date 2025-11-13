@@ -1,5 +1,135 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // We DON'T connect the socket immediately.
+    // We wait until the user has a name and room info.
+
+    const nameModal = document.getElementById('name-modal');
+    const nameInput = document.getElementById('name-input');
+    const roomInput = document.getElementById('room-input');
+    const passwordInput = document.getElementById('password-input');
+    const privateCheckbox = document.getElementById('private-checkbox');
+    const joinBtn = document.getElementById('join-btn');
+    const createBtn = document.getElementById('create-btn');
+    const mainApp = document.getElementById('main-app');
+
+    // Allow pressing Enter in name or room input to trigger join
+    nameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            joinBtn.click();
+        }
+    });
+
+    roomInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            joinBtn.click();
+        }
+    });
+
+    // Join existing room
+    joinBtn.addEventListener('click', () => {
+        const username = nameInput.value.trim();
+        const roomName = roomInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!username) {
+            alert('Please enter your name');
+            return;
+        }
+        if (!roomName) {
+            alert('Please enter a room name');
+            return;
+        }
+
+        nameModal.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+        
+        // Initialize app and join existing room
+        initializeApp(username, roomName, password, false);
+    });
+
+    // Create new room
+    createBtn.addEventListener('click', () => {
+        const username = nameInput.value.trim();
+        const roomName = roomInput.value.trim();
+        const password = passwordInput.value.trim();
+        const isPrivate = privateCheckbox.checked;
+
+        if (!username) {
+            alert('Please enter your name');
+            return;
+        }
+        if (!roomName) {
+            alert('Please enter a room name');
+            return;
+        }
+        if (isPrivate && !password) {
+            alert('Please enter a password for private room');
+            return;
+        }
+
+        nameModal.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+        
+        // Initialize app and create new room
+        initializeApp(username, roomName, password, true);
+    });
+});
+
+function initializeApp(username, roomName, password, isCreating) {
     const socket = io();
+    
+    // Wait for connection, then join or create room
+    socket.on('connect', () => {
+        if (isCreating) {
+            // Create a new room
+            socket.emit('createRoom', { 
+                username, 
+                roomName, 
+                isPrivate: password ? true : false, 
+                password 
+            });
+        } else {
+            // Join existing room
+            socket.emit('joinRoom', { 
+                username, 
+                roomName, 
+                password 
+            });
+        }
+    });
+
+    // Listen for the shareable link (only sent when creating private room)
+    socket.on('privateRoomCreated', (link) => {
+        const linkDisplay = document.createElement('div');
+        linkDisplay.style.cssText = 'position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #4CAF50; color: white; padding: 15px; border-radius: 5px; z-index: 1000; max-width: 80%;';
+        linkDisplay.innerHTML = `
+            <strong>Private room created!</strong><br>
+            Share this link: <input type="text" value="${link}" readonly style="width: 100%; margin-top: 5px;" onclick="this.select()">
+            <button onclick="this.parentElement.remove()" style="margin-top: 5px;">Close</button>
+        `;
+        document.body.appendChild(linkDisplay);
+        
+        // Auto-remove after 30 seconds
+        setTimeout(() => linkDisplay.remove(), 30000);
+    });
+
+    // Listen for errors from server
+    socket.on('error', (message) => {
+        alert(`Error: ${message}`);
+        // Optionally reload page to try again
+        setTimeout(() => window.location.reload(), 2000);
+    });
+
+    // Listen for notifications from server
+    socket.on('notification', (message) => {
+        // Create a styled notification instead of basic alert
+        const notification = document.createElement('div');
+        notification.style.cssText = 'position: fixed; top: 10px; right: 10px; background: #2196F3; color: white; padding: 15px 20px; border-radius: 5px; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2);';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => notification.remove(), 3000);
+    });
 
     // --- GET ALL HTML ELEMENTS ---
     const canvas = document.getElementById('drawing-canvas');
@@ -16,6 +146,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const strokeWidthSlider = document.getElementById('stroke-width');
     const colorPicker = document.getElementById('stroke-color');
     const eraserBtn = document.getElementById('eraser-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const loadBtn = document.getElementById('load-btn');
 
     // --- STATE VARIABLES ---
     let isDrawing = false;
@@ -104,8 +236,9 @@ document.addEventListener('DOMContentLoaded', function() {
         for (const id in users) {
             const user = users[id];
             const li = document.createElement('li');
-            let label = id === socket.id ? "(You)" : "";
-            li.innerHTML = `<div class="color-swatch" style="background-color: ${user.color};"></div> ${id.substring(0, 5)} ${label}`;
+            let label = id === socket.id ? " (You)" : "";
+            // Now displays username instead of socket ID
+            li.innerHTML = `<div class="color-swatch" style="background-color: ${user.color};"></div> ${user.username}${label}`;
             userList.appendChild(li);
         }
     });
@@ -115,6 +248,31 @@ document.addEventListener('DOMContentLoaded', function() {
         // Redraw cursors unless actively drawing a shape preview
         if (!isDrawing || toolMode === 'brush' || toolMode === 'eraser') {
             drawCursors();
+        }
+    });
+
+    socket.on('newAction', (action) => {
+        // When a new completed action comes from the server, just draw it.
+        // We can reuse our redraw function's logic for this.
+        if (action.type === 'rect') {
+            context.strokeStyle = action.color;
+            context.lineWidth = action.strokeWidth;
+            context.strokeRect(action.x, action.y, action.width, action.height);
+        } else if (action.type === 'circle') {
+            context.strokeStyle = action.color;
+            context.lineWidth = action.strokeWidth;
+            context.beginPath();
+            context.arc(action.cx, action.cy, action.radius, 0, Math.PI * 2);
+            context.stroke();
+        } else if (action.type === 'triangle') {
+            context.strokeStyle = action.color;
+            context.lineWidth = action.strokeWidth;
+            context.beginPath();
+            context.moveTo(action.p1.x, action.p1.y);
+            context.lineTo(action.p2.x, action.p2.y);
+            context.lineTo(action.p3.x, action.p3.y);
+            context.closePath();
+            context.stroke();
         }
     });
 
@@ -140,28 +298,15 @@ document.addEventListener('DOMContentLoaded', function() {
         toolSelect.value = 'brush'; // Keep dropdown showing brush
     });
 
-    socket.on('newAction', (action) => {
-        // When a new completed action comes from the server, just draw it.
-        // We can reuse our redraw function's logic for this.
-        if (action.type === 'rect') {
-            context.strokeStyle = action.color;
-            context.lineWidth = action.strokeWidth;
-            context.strokeRect(action.x, action.y, action.width, action.height);
-        } else if (action.type === 'circle') {
-            context.strokeStyle = action.color;
-            context.lineWidth = action.strokeWidth;
-            context.beginPath();
-            context.arc(action.cx, action.cy, action.radius, 0, Math.PI * 2);
-            context.stroke();
-        } else if (action.type === 'triangle') {
-            context.strokeStyle = action.color;
-            context.lineWidth = action.strokeWidth;
-            context.beginPath();
-            context.moveTo(action.p1.x, action.p1.y);
-            context.lineTo(action.p2.x, action.p2.y);
-            context.lineTo(action.p3.x, action.p3.y);
-            context.closePath();
-            context.stroke();
+    // Session Save/Load Buttons
+    saveBtn.addEventListener('click', () => {
+        socket.emit('saveSession');
+    });
+
+    loadBtn.addEventListener('click', () => {
+        const roomToLoad = prompt("Enter the name of the session to load:");
+        if (roomToLoad) {
+            socket.emit('loadSession', roomToLoad);
         }
     });
 
@@ -292,4 +437,4 @@ document.addEventListener('DOMContentLoaded', function() {
     undoBtn.addEventListener('click', () => socket.emit('undo'));
     redoBtn.addEventListener('click', () => socket.emit('redo'));
     clearBtn.addEventListener('click', () => socket.emit('clearCanvas'));
-});
+}
