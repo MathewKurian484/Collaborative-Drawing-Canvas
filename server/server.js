@@ -6,8 +6,12 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
-const PORT = 3000;
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allow connections from any origin
+    methods: ["GET", "POST"]
+  }
+});
 
 // Correct path for your folder structure
 app.use(express.static(path.join(__dirname, '../client')));
@@ -293,4 +297,7 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
