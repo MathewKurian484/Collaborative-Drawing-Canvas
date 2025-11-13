@@ -1,0 +1,54 @@
+.user-info {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+#user-list {
+    list-style: none;
+    padding: 0;
+}
+#user-list li {
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+}
+.color-swatch {
+    width: 15px;
+    height: 15px;
+    margin-right: 10px;
+    border: 1px solid #000;
+}
+
+#canvas-container {
+    position: relative;
+    width: 800px;
+    height: 600px;
+    margin: auto; /* Center the container */
+}
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 800px;
+    height: 600px;
+}
+#drawing-canvas {
+    border: 2px solid black;
+}
+/* This is the magic part: makes the top canvas transparent to mouse clicks */
+#cursor-canvas {
+    pointer-events: none;
+}
+
+/* Add this to style.css */
+.controls {
+    /* This makes sure the buttons stay in their own space */
+    position: relative; 
+    z-index: 10; /* A high number to guarantee they are on top of the canvas */
+    text-align: center;
+    margin-bottom: 10px;
+}

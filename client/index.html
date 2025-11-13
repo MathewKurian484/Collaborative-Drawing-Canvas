@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Collaborative Canvas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Collaborative Drawing Canvas</h1>
+    <div class="user-info">
+        <h3>Online Users:</h3>
+        <ul id="user-list"></ul>
+    </div>
+    <div class="controls">
+        <label for="tool-select">Tool:</label>
+        <select id="tool-select">
+            <option value="brush">Brush</option>
+            <option value="rectangle">Rectangle</option>
+            <option value="circle">Circle</option>
+            <option value="triangle">Triangle</option>
+        </select>
+
+        <label for="stroke-color">Color:</label>
+        <input type="color" id="stroke-color" value="#000000">
+
+        <label for="stroke-width">Width:</label>
+        <input type="range" id="stroke-width" min="1" max="50" value="5">
+        
+        <button id="eraser-btn">Eraser</button>
+        <button id="undo-btn">Undo</button>
+        <button id="redo-btn">Redo</button>
+        <button id="clear-btn">Clear Canvas</button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="drawing-canvas" width="800" height="600"></canvas>
+        <canvas id="cursor-canvas" width="800" height="600"></canvas>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
